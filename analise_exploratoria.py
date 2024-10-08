@@ -13,9 +13,6 @@ def load_data():
 # Carregar os dados
 df = load_data()
 
-# Exibir as colunas do DataFrame
-st.write("Colunas disponíveis no DataFrame:", df.columns.tolist())
-
 # Título da aplicação
 st.title('Análise do Uso de IA por Desenvolvedores')
 
