@@ -1,79 +1,103 @@
-import streamlit as st
 import pandas as pd
-import seaborn as sns
+import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import streamlit as st
 
-# Função para carregar os dados do GitHub
-@st.cache
+@st.cache_data
 def load_data():
-    url = 'https://raw.githubusercontent.com/TaysonMartinss/AnaliseExploratoria/refs/heads/main/dataframe_tratado.csv'
+    url = 'https://raw.githubusercontent.com/TaysonMartinss/AnaliseExploratoria/refs/heads/main/df_tratado.csv'
     df = pd.read_csv(url)
     return df
-
-# Carregar os dados
+st.set_page_config(layout="wide")
 df = load_data()
 
-# Título da aplicação
-st.title('Análise do Uso de IA por Desenvolvedores')
 
-# Navegação lateral
-st.sidebar.title("Menu")
-selected_option = st.sidebar.radio("Escolha uma seção:", ["Introdução", "Análise de Dados", "Gráficos"])
+st.sidebar.title('Olá, Seja bem-vindo!')
+selected_option = st.sidebar.radio("Escolha uma seção:", ["Dashboard", "Insights", "DATASET"])
 
-# Introdução
-if selected_option == "Introdução":
-    st.header("Bem-vindo à Análise do Uso de IA")
-    st.write("""
-        Este aplicativo analisa o uso de Inteligência Artificial entre desenvolvedores.
-        Você pode explorar as análises e gráficos a partir do menu lateral.
-    """)
 
-# Análise de Dados
-elif selected_option == "Análise de Dados":
-    st.header("Dados Carregados")
-    st.write(df)  # Mostra o DataFrame completo
+#menu da dashboard
 
-# Gráficos
-elif selected_option == "Gráficos":
-    st.header('Gráficos de Análise')
+top_10_countries = df['Country'].value_counts().head(10)
+pais_mais_usa_ia = df['Country'].loc[df['AISelect'].notna()].value_counts().idxmax()
+ia_mais_usada = df['AISearchDevHaveWorkedWith'].value_counts().idxmax()
+segunda_ia_mais_usada = df['AISearchDevHaveWorkedWith'].value_counts().index[1].split(';')[1]
+qtd_brasileiros_usam_ia = (df['Country'].loc[df['AISelect'].notna()].value_counts()).index.get_loc('Brazil') + 1
 
-    ### Gráfico 1: Porcentagem de desenvolvedores que usam IA em cada faixa etária
-    st.subheader('Porcentagem de desenvolvedores que usam IA em cada faixa etária')
-    if 'Age' in df.columns and 'AISelect' in df.columns:
-        idade_usa_ia = round((pd.crosstab(df['Age'], df['AISelect'], normalize='index') * 100), 2)
 
-        # Criar gráfico com seaborn
-        fig, ax = plt.subplots()
-        sns.heatmap(idade_usa_ia, annot=True, cmap="YlGnBu", ax=ax)
-        ax.set_title("Uso de IA por Faixa Etária (%)")
-        st.pyplot(fig)
-    else:
-        st.error("As colunas 'Age' ou 'AISelect' não foram encontradas no DataFrame.")
+def plot_top_countries():
+    plt.figure(figsize=(12, 8.5))
+    top_10_countries.plot(kind='bar')
+    plt.title('Top 10 Países que Participaram da Pesquisa')
+    plt.xlabel('País')
+    plt.ylabel('Número de Participantes')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    st.pyplot(plt)
 
-    ### Gráfico 2: Porcentagem de desenvolvedores que usam IA em cada profissão
-    st.subheader('Porcentagem de desenvolvedores que usam IA em cada profissão')
-    if 'MainBranch' in df.columns and 'AISelect' in df.columns:
-        profissao_usa_ia = round((pd.crosstab(df['MainBranch'], df['AISelect'], normalize='index') * 100), 2)
+def plot_usa_python():
+    df['UsaPython'] = df['LanguageHaveWorkedWith'].str.contains('Python', na=False)
 
-        # Criar gráfico com seaborn
-        fig2, ax2 = plt.subplots()
-        sns.heatmap(profissao_usa_ia, annot=True, cmap="YlOrRd", ax=ax2)
-        ax2.set_title("Uso de IA por Profissão (%)")
-        st.pyplot(fig2)
-    else:
-        st.error("As colunas 'MainBranch' ou 'AISelect' não foram encontradas no DataFrame.")
+    # Calcular a porcentagem de uso de Python
+    porcentagem_python = df['UsaPython'].mean() * 100
 
-    ### Gráfico 3: Opinião predominante sobre IA entre desenvolvedores
-    st.subheader('Opinião predominante sobre IA entre os desenvolvedores')
-    if 'AISent' in df.columns:
-        opiniao_ia_contagem = df['AISent'].value_counts()
+    # Criar o gráfico de barras
+    plt.figure(figsize=(6, 4))
+    plt.bar(['Python'], [porcentagem_python])
+    plt.ylabel('Porcentagem (%)')
+    plt.title('Porcentagem de Utilização de Python no Último Ano')
+    plt.ylim(0, 100)
+    st.pyplot(plt)
 
-        # Criar gráfico de barras
-        fig3, ax3 = plt.subplots()
-        opiniao_ia_contagem.plot(kind='bar', ax=ax3, color="skyblue")
-        ax3.set_title("Opinião sobre IA")
-        ax3.set_xlabel("Opinião")
-        ax3.set_ylabel("Quantidade")
-        st.pyplot(fig3)
-    else:
-        st.error("A coluna 'AISent' não foi encontrada no DataFrame.")
+def idade_uso_ia():
+    idade_ia_counts = df.groupby('Age')['AISelect'].count()
+
+    top_4_idades_ia = idade_ia_counts.nlargest(4)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(top_4_idades_ia.index, top_4_idades_ia.values)
+    plt.xlabel('Idade')
+    plt.ylabel('Número de Usuários de IA')
+    plt.title('4 Idades que Mais Utilizam IA')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    st.pyplot(plt)
+#########################################
+
+if selected_option == "Dashboard":
+    st.title(" 2024 Stack Overflow Developer Survey")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.subheader('🌍País com mais usuários de IA:')
+        st.text(pais_mais_usa_ia)
+
+
+    with col2:
+        st.subheader('🤖 IA mais utilizada:')
+        st.text(ia_mais_usada)
+
+    with col3:
+        st.subheader('🤖🥈 Segunda IA mais utilizada:')
+        st.text(segunda_ia_mais_usada)
+
+    with col4:
+        st.subheader('📊 Ranking do Brasil nas pesquisas:')
+        st.text(f'{qtd_brasileiros_usam_ia}ª Lugar')
+
+    col11, col12 = st.columns(2)
+    with col11:
+        plot_top_countries()
+    with col12:
+        plot_usa_python()
+
+    coll22, col23 = st.columns(2)
+    with coll22:
+        idade_uso_ia()
+
+
+elif selected_option == "Insights":
+  st.subheader("teste")
+
+elif selected_option == "DATASET":
+    df.head()
